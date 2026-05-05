@@ -1,0 +1,1859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTC Pro — Triple Threat Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.5.0/math.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   CSS VARIABLES & RESET
+═══════════════════════════════════════════ */
+:root {
+  --cyan:    #00f5ff;
+  --purple:  #b400ff;
+  --pink:    #ff2d78;
+  --green:   #00ff8c;
+  --orange:  #ff8c00;
+  --bg-deep: #04050f;
+  --bg-mid:  #080d1a;
+  --bg-card: rgba(10,15,35,0.82);
+  --glass:   rgba(255,255,255,0.04);
+  --glass2:  rgba(0,245,255,0.06);
+  --border:  rgba(0,245,255,0.18);
+  --border2: rgba(180,0,255,0.22);
+  --text:    #e8f0ff;
+  --muted:   rgba(200,220,255,0.45);
+  --shadow-cyan:   0 0 40px rgba(0,245,255,0.15);
+  --shadow-purple: 0 0 40px rgba(180,0,255,0.15);
+  --shadow-pink:   0 0 40px rgba(255,45,120,0.2);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Space Grotesk', sans-serif;
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATED BACKGROUND
+═══════════════════════════════════════════ */
+#bg-canvas {
+  position: fixed; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bg-gradient {
+  position: fixed; inset: 0; z-index: 0;
+  background: radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,245,255,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 50% at 80% 80%, rgba(180,0,255,0.07) 0%, transparent 60%),
+              radial-gradient(ellipse 40% 40% at 60% 30%, rgba(255,45,120,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 3px; }
+
+/* ═══════════════════════════════════════════
+   LAYOUT WRAPPER
+═══════════════════════════════════════════ */
+.app-wrapper {
+  position: relative; z-index: 1;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.app-header {
+  text-align: center;
+  padding: 40px 0 32px;
+  position: relative;
+}
+
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.logo-icon {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  border-radius: 14px;
+  display: grid; place-items: center;
+  font-size: 24px;
+  box-shadow: 0 0 30px rgba(0,245,255,0.4), 0 0 60px rgba(180,0,255,0.2);
+  animation: logo-pulse 3s ease-in-out infinite;
+}
+
+@keyframes logo-pulse {
+  0%,100% { box-shadow: 0 0 30px rgba(0,245,255,0.4),0 0 60px rgba(180,0,255,0.2); }
+  50%      { box-shadow: 0 0 50px rgba(0,245,255,0.6),0 0 90px rgba(180,0,255,0.4); }
+}
+
+.app-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 900;
+  background: linear-gradient(90deg, var(--cyan), var(--purple), var(--pink));
+  background-size: 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s linear infinite;
+  letter-spacing: 3px;
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% }
+  100% { background-position: 200% }
+}
+
+.app-subtitle {
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.header-line {
+  width: 120px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  margin: 16px auto 0;
+  animation: line-pulse 2s ease-in-out infinite;
+}
+
+@keyframes line-pulse {
+  0%,100% { opacity:0.4; } 50% { opacity:1; }
+}
+
+/* ═══════════════════════════════════════════
+   NAV TABS
+═══════════════════════════════════════════ */
+.nav-tabs {
+  display: flex;
+  gap: 10px;
+  background: rgba(8,13,26,0.8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  margin-bottom: 28px;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-cyan), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-tab .tab-icon { font-size: 1.1rem; transition: transform 0.3s; }
+.nav-tab:hover .tab-icon { transform: scale(1.2) rotate(-5deg); }
+
+.nav-tab::before {
+  content:'';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  opacity: 0;
+  transition: opacity 0.35s;
+  border-radius: var(--radius-md);
+}
+
+.nav-tab:hover { color: var(--text); }
+.nav-tab:hover::before { opacity: 0.12; }
+
+.nav-tab.active {
+  color: var(--bg-deep);
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  box-shadow: 0 0 25px rgba(0,245,255,0.4), 0 4px 15px rgba(0,0,0,0.3);
+  font-weight: 700;
+}
+
+.nav-tab.active::before { opacity: 0; }
+
+/* Ripple */
+.ripple-container { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transform: scale(0);
+  animation: ripple-anim 0.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes ripple-anim {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   CARD / GLASS PANEL
+═══════════════════════════════════════════ */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-cyan), inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow: hidden;
+  transition: box-shadow 0.4s;
+}
+
+.glass-card:hover {
+  box-shadow: 0 0 60px rgba(0,245,255,0.18), 0 0 100px rgba(180,0,255,0.1), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* ═══════════════════════════════════════════
+   TAB PANELS
+═══════════════════════════════════════════ */
+.tab-panel {
+  display: none;
+  animation: panel-in 0.45s cubic-bezier(0.34,1.56,0.64,1);
+}
+.tab-panel.active { display: block; }
+
+@keyframes panel-in {
+  from { opacity:0; transform: translateY(18px) scale(0.98); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* ═══════════════════════════════════════════
+   SCIENTIFIC CALCULATOR
+═══════════════════════════════════════════ */
+.sci-panel { padding: 28px; }
+
+.sci-display {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  text-align: right;
+  position: relative;
+  overflow: hidden;
+}
+
+.sci-display::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+}
+
+.sci-history-display {
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-height: 20px;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+  letter-spacing:1px;
+}
+
+.sci-expression {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  color: var(--text);
+  min-height: 48px;
+  word-break: break-all;
+  letter-spacing: 2px;
+  transition: color 0.2s;
+}
+
+.sci-expression.error { color: var(--pink); }
+
+.sci-result {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  color: var(--cyan);
+  min-height: 24px;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* Keyboard input area */
+.sci-input-row {
+  display: flex; gap:10px; margin-bottom:16px;
+}
+
+.sci-text-input {
+  flex:1;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  padding: 12px 16px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.sci-text-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,245,255,0.15), inset 0 0 20px rgba(0,245,255,0.04);
+}
+
+/* Button grid */
+.sci-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.sci-btn {
+  padding: 14px 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  letter-spacing: 0.5px;
+}
+
+.sci-btn:hover {
+  background: rgba(0,245,255,0.1);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0,245,255,0.2);
+}
+
+.sci-btn:active { transform: translateY(0) scale(0.96); }
+
+.sci-btn.op {
+  background: rgba(0,245,255,0.08);
+  color: var(--cyan);
+  border-color: rgba(0,245,255,0.25);
+}
+
+.sci-btn.fn {
+  background: rgba(180,0,255,0.08);
+  color: #d580ff;
+  border-color: rgba(180,0,255,0.25);
+  font-size: 0.75rem;
+}
+.sci-btn.fn:hover {
+  background: rgba(180,0,255,0.18);
+  border-color: var(--purple);
+  color: var(--purple);
+  box-shadow: 0 4px 20px rgba(180,0,255,0.25);
+}
+
+.sci-btn.eq {
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  color: var(--bg-deep);
+  border-color: transparent;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.sci-btn.eq:hover {
+  box-shadow: 0 0 30px rgba(0,245,255,0.5);
+  transform: translateY(-2px) scale(1.02);
+  color: var(--bg-deep);
+}
+
+.sci-btn.clear {
+  background: rgba(255,45,120,0.1);
+  color: var(--pink);
+  border-color: rgba(255,45,120,0.3);
+}
+.sci-btn.clear:hover {
+  background: rgba(255,45,120,0.2);
+  border-color: var(--pink);
+  box-shadow: 0 4px 20px rgba(255,45,120,0.3);
+  color: var(--pink);
+}
+
+.sci-btn.num {
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════
+   HISTORY SIDEBAR
+═══════════════════════════════════════════ */
+.history-panel {
+  margin-top: 20px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.history-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  font-family: var(--font-display);
+}
+
+.history-clear {
+  background: none; border: none; color: var(--pink);
+  cursor: pointer; font-size: 0.7rem; text-transform: uppercase;
+  letter-spacing: 1px; transition: opacity 0.2s;
+}
+.history-clear:hover { opacity: 0.7; }
+
+.history-list {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.history-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  gap: 12px;
+}
+.history-item:hover { background: rgba(0,245,255,0.08); }
+.history-item .expr { color: var(--muted); font-family: var(--font-display); font-size:0.72rem; flex:1; }
+.history-item .res  { color: var(--cyan);  font-family: var(--font-display); font-size:0.82rem; font-weight:700; }
+.history-item .ts   { color: rgba(200,220,255,0.25); font-size:0.65rem; white-space:nowrap; }
+
+/* ═══════════════════════════════════════════
+   FINANCIAL CALCULATOR
+═══════════════════════════════════════════ */
+.fin-panel { padding: 28px; }
+
+.fin-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.fin-type-btn {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--glass);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.fin-type-btn .fin-btn-icon { display: block; font-size: 1.5rem; margin-bottom: 6px; }
+.fin-type-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,245,255,0.06); }
+
+.fin-type-btn.active {
+  border-color: var(--cyan);
+  background: rgba(0,245,255,0.12);
+  color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0,245,255,0.2);
+}
+
+/* Sliders */
+.fin-inputs { display: flex; flex-direction: column; gap: 18px; margin-bottom: 24px; }
+
+.slider-group { display: flex; flex-direction: column; gap: 6px; }
+
+.slider-label-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.slider-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.slider-value {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.fin-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--cyan) var(--pct, 50%), rgba(255,255,255,0.1) var(--pct, 50%));
+  outline: none;
+  cursor: pointer;
+}
+
+.fin-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan), 0 0 20px rgba(0,245,255,0.4);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.fin-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+.fin-number-input {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  outline: none;
+  width: 120px;
+  text-align: right;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.fin-number-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,245,255,0.15);
+}
+
+/* Fin Result Cards */
+.fin-results {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+  margin-bottom: 24px;
+}
+
+.fin-result-card {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.fin-result-card::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(135deg, rgba(0,245,255,0.04), transparent);
+}
+
+.fin-result-card:hover { transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,245,255,0.15); }
+
+.fin-result-label {
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.fin-result-value {
+  font-family: var(--font-display);
+  font-size: clamp(0.9rem, 2.5vw, 1.15rem);
+  font-weight: 700;
+  color: var(--cyan);
+  animation: count-up 0.5s ease-out;
+}
+
+@keyframes count-up {
+  from { opacity:0; transform: translateY(8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.fin-result-card.highlight .fin-result-value { color: var(--green); }
+.fin-result-card.accent    .fin-result-value { color: var(--pink); }
+
+/* Chart container */
+.chart-container {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  position: relative;
+  height: 240px;
+}
+
+.chart-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-placeholder .ph-icon { font-size: 2rem; opacity: 0.3; }
+
+/* ═══════════════════════════════════════════
+   BMI CALCULATOR
+═══════════════════════════════════════════ */
+.bmi-panel { padding: 28px; }
+
+.bmi-unit-toggle {
+  display: flex;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  width: fit-content;
+  margin-bottom: 24px;
+}
+
+.unit-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.unit-btn.active {
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  color: var(--bg-deep);
+  font-weight: 700;
+}
+
+.bmi-inputs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.bmi-input-group { display: flex; flex-direction: column; gap: 8px; }
+
+.bmi-label {
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.bmi-input {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  padding: 14px 16px;
+  outline: none;
+  text-align: center;
+  transition: all 0.3s;
+}
+.bmi-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,245,255,0.15), inset 0 0 20px rgba(0,245,255,0.04);
+}
+
+/* BMI Gauge / Scale */
+.bmi-gauge-wrap {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.bmi-gauge-title {
+  font-size: 0.72rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+.bmi-scale-track {
+  height: 16px;
+  border-radius: 8px;
+  background: linear-gradient(90deg,
+    #60a5fa 0%,       /* underweight */
+    #34d399 25%,      /* normal */
+    #fbbf24 55%,      /* overweight */
+    #f87171 80%       /* obese */
+  );
+  position: relative;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+
+.bmi-needle {
+  position: absolute;
+  top: -10px;
+  width: 4px; height: 36px;
+  background: white;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px white;
+  transition: left 0.8s cubic-bezier(0.34,1.56,0.64,1);
+  left: 50%;
+}
+
+.bmi-needle::after {
+  content: attr(data-val);
+  position: absolute;
+  top: -24px; left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: white;
+  white-space: nowrap;
+  text-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+
+.bmi-scale-labels {
+  display: flex; justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.bmi-result-badge {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.3);
+  margin-bottom: 20px;
+  transition: all 0.5s;
+}
+
+.bmi-big-number {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  font-weight: 900;
+  line-height: 1;
+  transition: color 0.5s;
+}
+
+.bmi-category-label {
+  font-size: 0.9rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+.bmi-health-tips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.health-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(0,245,255,0.04);
+  border: 1px solid rgba(0,245,255,0.1);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+  transition: all 0.3s;
+}
+.health-tip:hover { border-color: rgba(0,245,255,0.3); color: var(--text); }
+.health-tip .tip-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+/* ═══════════════════════════════════════════
+   SHARED CALCULATE BUTTON
+═══════════════════════════════════════════ */
+.calc-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--cyan), var(--purple));
+  color: var(--bg-deep);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  overflow: hidden;
+  margin-top: 20px;
+}
+
+.calc-btn::before {
+  content:'';
+  position: absolute; inset:0;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.calc-btn:hover::before { opacity: 1; }
+.calc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,245,255,0.35); }
+.calc-btn:active { transform: translateY(0); }
+.calc-btn span { position: relative; }
+
+/* ═══════════════════════════════════════════
+   COPY / SHARE ROW
+═══════════════════════════════════════════ */
+.action-row {
+  display: flex; gap:8px; margin-top:12px;
+}
+
+.action-btn {
+  flex:1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--glass);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.action-btn:hover { border-color: var(--cyan); color: var(--cyan); background: rgba(0,245,255,0.08); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 30px; right: 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--cyan);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 0.82rem;
+  color: var(--cyan);
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: 0 8px 30px rgba(0,245,255,0.25);
+  transform: translateX(120%);
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 100;
+}
+.toast.show { transform: translateX(0); }
+
+/* ═══════════════════════════════════════════
+   THEME SWITCHER
+═══════════════════════════════════════════ */
+.theme-strip {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.theme-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+  position: relative;
+}
+.theme-dot.active { border-color: white; transform: scale(1.3); }
+.theme-dot:hover { transform: scale(1.2); }
+.theme-dot[data-theme="cyber"]  { background: linear-gradient(135deg, #00f5ff, #b400ff); }
+.theme-dot[data-theme="aurora"] { background: linear-gradient(135deg, #00ff8c, #0066ff); }
+.theme-dot[data-theme="inferno"]{ background: linear-gradient(135deg, #ff8c00, #ff2d78); }
+.theme-dot[data-theme="void"]   { background: linear-gradient(135deg, #ffffff, #888888); }
+
+.theme-label {
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   KEYBOARD SHORTCUTS HINT
+═══════════════════════════════════════════ */
+.shortcuts-hint {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 16px;
+}
+
+.kbd {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.65rem;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.kbd code {
+  background: rgba(0,245,255,0.15);
+  border-radius: 3px;
+  padding: 0 4px;
+  color: var(--cyan);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .sci-grid { grid-template-columns: repeat(4,1fr); }
+  .fin-type-grid { grid-template-columns: 1fr 1fr; }
+  .fin-results { grid-template-columns: 1fr; }
+  .bmi-inputs-grid { grid-template-columns: 1fr; }
+  .nav-tab .tab-label { display: none; }
+  .nav-tab { padding: 14px; }
+}
+
+@media (max-width: 400px) {
+  .sci-grid { grid-template-columns: repeat(4,1fr); }
+  .sci-btn.fn { font-size: 0.65rem; padding: 10px 4px; }
+}
+
+/* Theme variations */
+body[data-theme="aurora"] {
+  --cyan: #00ff8c;
+  --purple: #0066ff;
+  --pink: #00ccff;
+}
+body[data-theme="inferno"] {
+  --cyan: #ff8c00;
+  --purple: #ff2d78;
+  --pink: #ffcc00;
+}
+body[data-theme="void"] {
+  --cyan: #ffffff;
+  --purple: #aaaaaa;
+  --pink: #666666;
+}
+
+/* ═══════════════════════════════════════════
+   SUCCESS FLASH
+═══════════════════════════════════════════ */
+@keyframes success-flash {
+  0%   { box-shadow: 0 0 0 rgba(0,255,140,0); }
+  50%  { box-shadow: 0 0 40px rgba(0,255,140,0.4); }
+  100% { box-shadow: 0 0 0 rgba(0,255,140,0); }
+}
+.flash { animation: success-flash 0.7s ease-out; }
+
+/* Tooltip */
+[data-tip] { position: relative; cursor: help; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10,15,35,0.95);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  color: var(--text);
+  white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 50;
+}
+[data-tip]:hover::after { opacity: 1; }
+
+/* Number input arrows removal */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
+</style>
+</head>
+<body data-theme="cyber">
+
+<canvas id="bg-canvas"></canvas>
+<div class="bg-gradient"></div>
+
+<div class="app-wrapper">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="logo-mark">
+      <div class="logo-icon">⚡</div>
+      <h1 class="app-title">TTC PRO</h1>
+    </div>
+    <p class="app-subtitle">Triple Threat Calculator — Advanced Edition</p>
+    <div class="header-line"></div>
+  </header>
+
+  <!-- NAV -->
+  <nav class="nav-tabs" role="tablist">
+    <button class="nav-tab active" onclick="switchTab('sci',this)" role="tab" aria-selected="true">
+      <div class="ripple-container"></div>
+      <span class="tab-icon">🧮</span>
+      <span class="tab-label">Scientific</span>
+    </button>
+    <button class="nav-tab" onclick="switchTab('fin',this)" role="tab">
+      <div class="ripple-container"></div>
+      <span class="tab-icon">📈</span>
+      <span class="tab-label">Financial</span>
+    </button>
+    <button class="nav-tab" onclick="switchTab('bmi',this)" role="tab">
+      <div class="ripple-container"></div>
+      <span class="tab-icon">💪</span>
+      <span class="tab-label">BMI</span>
+    </button>
+  </nav>
+
+  <!-- ─── SCIENTIFIC TAB ─── -->
+  <div class="tab-panel active glass-card" id="tab-sci">
+    <div class="sci-panel">
+
+      <!-- Display -->
+      <div class="sci-display" id="sci-display">
+        <div class="sci-history-display" id="prev-expr"></div>
+        <div class="sci-expression" id="sci-expr">0</div>
+        <div class="sci-result" id="sci-result-live"></div>
+      </div>
+
+      <!-- Input row -->
+      <div class="sci-input-row">
+        <input class="sci-text-input" id="sci-text-input" placeholder="Type expression or use buttons…" autocomplete="off" spellcheck="false">
+      </div>
+
+      <!-- Button grid -->
+      <div class="sci-grid">
+        <!-- Row 1: fn -->
+        <button class="sci-btn fn" onclick="ins('sin(')"    data-tip="Sine function">sin</button>
+        <button class="sci-btn fn" onclick="ins('cos(')"    data-tip="Cosine function">cos</button>
+        <button class="sci-btn fn" onclick="ins('tan(')"    data-tip="Tangent function">tan</button>
+        <button class="sci-btn fn" onclick="ins('log(')"    data-tip="Base-10 logarithm">log₁₀</button>
+        <button class="sci-btn fn" onclick="ins('log2(')"   data-tip="Base-2 logarithm">log₂</button>
+
+        <!-- Row 2 -->
+        <button class="sci-btn fn" onclick="ins('sqrt(')"   data-tip="Square root">√</button>
+        <button class="sci-btn fn" onclick="ins('cbrt(')"   data-tip="Cube root">∛</button>
+        <button class="sci-btn fn" onclick="ins('abs(')"    data-tip="Absolute value">|x|</button>
+        <button class="sci-btn fn" onclick="ins('ln(')"     data-tip="Natural logarithm">ln</button>
+        <button class="sci-btn fn" onclick="ins('exp(')"    data-tip="e raised to power">eˣ</button>
+
+        <!-- Row 3 -->
+        <button class="sci-btn fn" onclick="ins('^2')"      data-tip="Square">x²</button>
+        <button class="sci-btn fn" onclick="ins('^3')"      data-tip="Cube">x³</button>
+        <button class="sci-btn fn" onclick="ins('^(')"      data-tip="Power">xⁿ</button>
+        <button class="sci-btn fn" onclick="ins('pi')"      data-tip="Pi ≈ 3.14159">π</button>
+        <button class="sci-btn fn" onclick="ins('e')"       data-tip="Euler's number ≈ 2.71828">e</button>
+
+        <!-- Row 4: ops + nums -->
+        <button class="sci-btn op" onclick="ins('(')">(</button>
+        <button class="sci-btn op" onclick="ins(')')">)</button>
+        <button class="sci-btn op" onclick="ins('%')">%</button>
+        <button class="sci-btn clear" onclick="bksp()">⌫</button>
+        <button class="sci-btn clear" onclick="clearSci()">C</button>
+
+        <!-- Row 5 -->
+        <button class="sci-btn num" onclick="ins('7')">7</button>
+        <button class="sci-btn num" onclick="ins('8')">8</button>
+        <button class="sci-btn num" onclick="ins('9')">9</button>
+        <button class="sci-btn op"  onclick="ins('/')">÷</button>
+        <button class="sci-btn fn"  onclick="ins('factorial(')" data-tip="Factorial n!">n!</button>
+
+        <!-- Row 6 -->
+        <button class="sci-btn num" onclick="ins('4')">4</button>
+        <button class="sci-btn num" onclick="ins('5')">5</button>
+        <button class="sci-btn num" onclick="ins('6')">6</button>
+        <button class="sci-btn op"  onclick="ins('*')">×</button>
+        <button class="sci-btn fn"  onclick="ins('ceil(')"  data-tip="Ceiling function">⌈x⌉</button>
+
+        <!-- Row 7 -->
+        <button class="sci-btn num" onclick="ins('1')">1</button>
+        <button class="sci-btn num" onclick="ins('2')">2</button>
+        <button class="sci-btn num" onclick="ins('3')">3</button>
+        <button class="sci-btn op"  onclick="ins('-')">−</button>
+        <button class="sci-btn fn"  onclick="ins('floor(')" data-tip="Floor function">⌊x⌋</button>
+
+        <!-- Row 8 -->
+        <button class="sci-btn num" onclick="ins('0')">0</button>
+        <button class="sci-btn num" onclick="ins('.')">.</button>
+        <button class="sci-btn op"  onclick="ins('+')">+</button>
+        <button class="sci-btn op"  onclick="ins('ANS')" data-tip="Last answer">ANS</button>
+        <button class="sci-btn eq"  onclick="calcSci()">＝</button>
+      </div>
+
+      <!-- Keyboard shortcuts -->
+      <div class="shortcuts-hint">
+        <span class="kbd"><code>Enter</code> Calculate</span>
+        <span class="kbd"><code>Esc</code> Clear</span>
+        <span class="kbd"><code>Backspace</code> Delete</span>
+        <span class="kbd"><code>↑</code> History</span>
+      </div>
+
+      <!-- History -->
+      <div class="history-panel">
+        <div class="history-header">
+          <span>⏱ Calculation History</span>
+          <button class="history-clear" onclick="clearHistory()">Clear All</button>
+        </div>
+        <div class="history-list" id="history-list">
+          <div style="text-align:center;padding:16px;color:var(--muted);font-size:0.75rem;letter-spacing:1px;">No history yet</div>
+        </div>
+      </div>
+
+      <!-- Action Row -->
+      <div class="action-row">
+        <button class="action-btn" onclick="copyResult('sci')">📋 Copy Result</button>
+        <button class="action-btn" onclick="shareResult('sci')">🔗 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── FINANCIAL TAB ─── -->
+  <div class="tab-panel glass-card" id="tab-fin">
+    <div class="fin-panel">
+
+      <div class="fin-type-grid">
+        <button class="fin-type-btn active" onclick="setFinType('emi',this)">
+          <span class="fin-btn-icon">🏠</span>EMI Calculator
+        </button>
+        <button class="fin-type-btn" onclick="setFinType('fv',this)">
+          <span class="fin-btn-icon">📈</span>Future Value
+        </button>
+        <button class="fin-type-btn" onclick="setFinType('compound',this)">
+          <span class="fin-btn-icon">💰</span>Compound Interest
+        </button>
+        <button class="fin-type-btn" onclick="setFinType('simple',this)">
+          <span class="fin-btn-icon">📊</span>Simple Interest
+        </button>
+      </div>
+
+      <div class="fin-inputs" id="fin-inputs"><!-- Rendered by JS --></div>
+
+      <button class="calc-btn" onclick="calcFin()"><span>⚡ Calculate</span></button>
+
+      <!-- Results -->
+      <div class="fin-results" id="fin-results" style="display:none; margin-top:20px;">
+        <div class="fin-result-card highlight">
+          <div class="fin-result-label" id="fin-r1-label">Monthly EMI</div>
+          <div class="fin-result-value" id="fin-r1-val">—</div>
+        </div>
+        <div class="fin-result-card">
+          <div class="fin-result-label" id="fin-r2-label">Total Payment</div>
+          <div class="fin-result-value" id="fin-r2-val">—</div>
+        </div>
+        <div class="fin-result-card accent">
+          <div class="fin-result-label" id="fin-r3-label">Total Interest</div>
+          <div class="fin-result-value" id="fin-r3-val">—</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-container" id="chart-wrap" style="display:none; margin-top:16px;">
+        <canvas id="fin-chart"></canvas>
+      </div>
+
+      <div class="action-row" style="margin-top:12px;">
+        <button class="action-btn" onclick="copyResult('fin')">📋 Copy Results</button>
+        <button class="action-btn" onclick="shareResult('fin')">🔗 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── BMI TAB ─── -->
+  <div class="tab-panel glass-card" id="tab-bmi">
+    <div class="bmi-panel">
+
+      <div class="bmi-unit-toggle">
+        <button class="unit-btn active" onclick="setUnit('metric',this)">Metric (kg/m)</button>
+        <button class="unit-btn" onclick="setUnit('imperial',this)">Imperial (lb/ft)</button>
+      </div>
+
+      <div class="bmi-inputs-grid">
+        <div class="bmi-input-group">
+          <label class="bmi-label">⚖️ Weight <span id="weight-unit-label">(kg)</span></label>
+          <input class="bmi-input" type="number" id="bmi-weight" placeholder="70" oninput="liveCalcBMI()">
+        </div>
+        <div class="bmi-input-group">
+          <label class="bmi-label">📏 Height <span id="height-unit-label">(m)</span></label>
+          <input class="bmi-input" type="number" id="bmi-height" placeholder="1.75" step="0.01" oninput="liveCalcBMI()">
+        </div>
+      </div>
+
+      <!-- BMI Gauge -->
+      <div class="bmi-gauge-wrap">
+        <div class="bmi-gauge-title">BMI Scale Visualization</div>
+        <div class="bmi-scale-track">
+          <div class="bmi-needle" id="bmi-needle" data-val=""></div>
+        </div>
+        <div class="bmi-scale-labels">
+          <span>Underweight<br>&lt;18.5</span>
+          <span style="text-align:center">Normal<br>18.5–24.9</span>
+          <span style="text-align:center">Overweight<br>25–29.9</span>
+          <span style="text-align:right">Obese<br>≥30</span>
+        </div>
+      </div>
+
+      <!-- BMI Result Badge -->
+      <div class="bmi-result-badge" id="bmi-badge">
+        <div class="bmi-big-number" id="bmi-number" style="color:var(--muted)">—</div>
+        <div class="bmi-category-label" id="bmi-cat" style="color:var(--muted)">Enter your measurements</div>
+      </div>
+
+      <!-- Health Tips -->
+      <div class="bmi-health-tips" id="bmi-tips"></div>
+
+      <div class="action-row" style="margin-top:16px;">
+        <button class="action-btn" onclick="copyResult('bmi')">📋 Copy Result</button>
+        <button class="action-btn" onclick="shareResult('bmi')">🔗 Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- THEME STRIP -->
+  <div class="theme-strip">
+    <span class="theme-label">Theme</span>
+    <div class="theme-dot active" data-theme="cyber"   onclick="setTheme('cyber',this)"   title="Cyber"></div>
+    <div class="theme-dot"       data-theme="aurora"  onclick="setTheme('aurora',this)"  title="Aurora"></div>
+    <div class="theme-dot"       data-theme="inferno" onclick="setTheme('inferno',this)" title="Inferno"></div>
+    <div class="theme-dot"       data-theme="void"    onclick="setTheme('void',this)"    title="Void"></div>
+  </div>
+
+</div><!-- end app-wrapper -->
+
+<!-- Toast -->
+<div class="toast" id="toast">✓ Copied to clipboard</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   ANIMATED BACKGROUND — Particle Grid
+═══════════════════════════════════════════════════════ */
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [], lines = [];
+  const N = 60;
+
+  function resize(){
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor(){
+      this.x = Math.random()*W;
+      this.y = Math.random()*H;
+      this.vx = (Math.random()-.5)*.3;
+      this.vy = (Math.random()-.5)*.3;
+      this.r  = Math.random()*1.5+.5;
+      this.alpha = Math.random()*.5+.2;
+    }
+    update(){
+      this.x+=this.vx; this.y+=this.vy;
+      if(this.x<0||this.x>W) this.vx*=-1;
+      if(this.y<0||this.y>H) this.vy*=-1;
+    }
+    draw(){
+      const cyan = getComputedStyle(document.body).getPropertyValue('--cyan').trim()||'#00f5ff';
+      ctx.beginPath();
+      ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(0,245,255,${this.alpha})`;
+      ctx.fill();
+    }
+  }
+
+  for(let i=0;i<N;i++) particles.push(new Particle());
+
+  function drawLines(){
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x;
+        const dy=particles[i].y-particles[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<150){
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(0,245,255,${(1-dist/150)*.12})`;
+          ctx.lineWidth=.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function animate(){
+    ctx.clearRect(0,0,W,H);
+    particles.forEach(p=>{ p.update(); p.draw(); });
+    drawLines();
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* ═══════════════════════════════════════════════════════
+   RIPPLE EFFECT
+═══════════════════════════════════════════════════════ */
+document.querySelectorAll('.nav-tab').forEach(btn=>{
+  btn.addEventListener('click',function(e){
+    const container = this.querySelector('.ripple-container');
+    const rect = this.getBoundingClientRect();
+    const ripple = document.createElement('div');
+    ripple.classList.add('ripple');
+    const size = Math.max(this.clientWidth, this.clientHeight);
+    ripple.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    container.appendChild(ripple);
+    setTimeout(()=>ripple.remove(), 700);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════════════════════════════ */
+function switchTab(name, btn){
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='sci') setTimeout(()=>document.getElementById('sci-text-input').focus(),100);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SCIENTIFIC CALCULATOR
+═══════════════════════════════════════════════════════ */
+let sciExpr = '';
+let sciANS  = 0;
+let history = [];
+let histIdx = -1;
+
+const exprEl  = document.getElementById('sci-expr');
+const resEl   = document.getElementById('sci-result-live');
+const prevEl  = document.getElementById('prev-expr');
+const textIn  = document.getElementById('sci-text-input');
+
+function updateDisplay(expr){
+  exprEl.textContent = expr || '0';
+  exprEl.classList.remove('error');
+  // Live preview
+  if(expr.length > 0){
+    try{
+      const raw = expr.replace(/ANS/g, sciANS).replace(/%/g,'/100');
+      const val = math.evaluate(raw);
+      if(val !== undefined && !isNaN(val) && isFinite(val)){
+        resEl.textContent = '= ' + formatNum(val);
+      } else { resEl.textContent=''; }
+    }catch(e){ resEl.textContent=''; }
+  } else { resEl.textContent=''; }
+}
+
+function ins(val){
+  if(val==='ANS') sciExpr += sciANS;
+  else sciExpr += val;
+  textIn.value = sciExpr;
+  updateDisplay(sciExpr);
+  textIn.focus();
+}
+
+function bksp(){
+  sciExpr = sciExpr.slice(0,-1);
+  textIn.value = sciExpr;
+  updateDisplay(sciExpr);
+}
+
+function clearSci(){
+  prevEl.textContent = '';
+  sciExpr = '';
+  textIn.value = '';
+  updateDisplay('');
+  resEl.textContent = '';
+}
+
+function calcSci(){
+  const expr = sciExpr || textIn.value;
+  if(!expr) return;
+  try{
+    const raw = expr.replace(/ANS/g, sciANS).replace(/%/g,'/100');
+    const result = math.evaluate(raw);
+    if(result===undefined) throw new Error('undefined');
+    const formatted = formatNum(result);
+    prevEl.textContent = expr + ' =';
+    exprEl.textContent = formatted;
+    exprEl.classList.remove('error');
+    resEl.textContent = '';
+    sciANS = result;
+    sciExpr = String(result);
+    textIn.value = sciExpr;
+    addHistory(expr, formatted);
+    document.getElementById('sci-display').classList.add('flash');
+    setTimeout(()=>document.getElementById('sci-display').classList.remove('flash'),700);
+  }catch(e){
+    exprEl.classList.add('error');
+    exprEl.textContent = 'Error';
+    resEl.textContent = '⚠ ' + (e.message||'Invalid expression');
+  }
+}
+
+function formatNum(n){
+  if(typeof n==='boolean') return String(n);
+  if(typeof n==='object' && n.re !== undefined) return `${formatNum(n.re)} + ${formatNum(n.im)}i`;
+  const abs = Math.abs(n);
+  if(abs >= 1e15 || (abs < 1e-10 && abs > 0)) return n.toExponential(6);
+  const str = String(+n.toPrecision(12));
+  return str;
+}
+
+// Sync text input
+textIn.addEventListener('input', function(){
+  sciExpr = this.value;
+  updateDisplay(sciExpr);
+});
+
+textIn.addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ calcSci(); }
+  if(e.key==='Escape'){ clearSci(); }
+  if(e.key==='ArrowUp'){
+    e.preventDefault();
+    if(history.length===0) return;
+    histIdx = Math.min(histIdx+1, history.length-1);
+    const h = history[history.length-1-histIdx];
+    sciExpr = h.expr;
+    this.value = sciExpr;
+    updateDisplay(sciExpr);
+  }
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    histIdx = Math.max(histIdx-1, -1);
+    if(histIdx===-1){ sciExpr=''; this.value=''; updateDisplay(''); }
+    else {
+      const h = history[history.length-1-histIdx];
+      sciExpr = h.expr;
+      this.value = sciExpr;
+      updateDisplay(sciExpr);
+    }
+  }
+});
+
+// Global keyboard
+document.addEventListener('keydown',function(e){
+  const active = document.querySelector('.tab-panel.active');
+  if(active.id !== 'tab-sci') return;
+  if(e.target === textIn) return;
+  if(e.key==='Enter') calcSci();
+  if(e.key==='Escape') clearSci();
+  if(e.key==='Backspace') bksp();
+});
+
+function addHistory(expr, result){
+  const now = new Date();
+  const ts = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  history.push({expr, result, ts});
+  if(history.length>30) history.shift();
+  renderHistory();
+}
+
+function renderHistory(){
+  const list = document.getElementById('history-list');
+  if(history.length===0){
+    list.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:0.75rem;letter-spacing:1px;">No history yet</div>';
+    return;
+  }
+  list.innerHTML = history.slice().reverse().map((h,i)=>`
+    <div class="history-item" onclick="recallHistory(${history.length-1-i})">
+      <span class="expr">${h.expr}</span>
+      <span class="res">= ${h.result}</span>
+      <span class="ts">${h.ts}</span>
+    </div>
+  `).join('');
+}
+
+function recallHistory(i){
+  const h = history[i];
+  sciExpr = h.expr;
+  textIn.value = sciExpr;
+  updateDisplay(sciExpr);
+  textIn.focus();
+}
+
+function clearHistory(){
+  history = [];
+  histIdx = -1;
+  renderHistory();
+}
+
+/* ═══════════════════════════════════════════════════════
+   FINANCIAL CALCULATOR
+═══════════════════════════════════════════════════════ */
+let finType = 'emi';
+let finChart = null;
+
+const finConfigs = {
+  emi: {
+    inputs: [
+      {id:'principal', label:'🏠 Loan Amount', unit:'₹', min:10000, max:10000000, step:10000, def:500000, tip:'Total loan amount borrowed'},
+      {id:'rate',      label:'📊 Annual Interest Rate', unit:'%', min:1, max:30, step:0.1, def:8.5, tip:'Annual interest rate offered by bank'},
+      {id:'time',      label:'📅 Loan Tenure', unit:'yrs', min:1, max:30, step:1, def:20, tip:'Duration of loan in years'}
+    ],
+    calc(p,r,t){
+      const mr = (r/100)/12, mo = t*12;
+      const emi = mo===0 ? p : (p * mr * Math.pow(1+mr,mo))/(Math.pow(1+mr,mo)-1);
+      const total = emi*mo, interest = total-p;
+      return {
+        labels:['Monthly EMI','Total Payment','Total Interest'],
+        vals:[`₹${fmt(emi)}`,`₹${fmt(total)}`,`₹${fmt(interest)}`],
+        chart:{type:'doughnut', labels:['Principal','Interest'], data:[p,interest], colors:['#00f5ff','#ff2d78']}
+      };
+    }
+  },
+  fv: {
+    inputs: [
+      {id:'principal', label:'💵 Initial Investment', unit:'₹', min:1000, max:10000000, step:1000, def:100000},
+      {id:'rate',      label:'📈 Annual Return Rate', unit:'%', min:1, max:50, step:0.1, def:12},
+      {id:'time',      label:'⏳ Investment Period', unit:'yrs', min:1, max:40, step:1, def:10}
+    ],
+    calc(p,r,t){
+      const fv = p * Math.pow(1+(r/100),t);
+      const growth = fv-p;
+      return {
+        labels:['Future Value','Total Growth','Return %'],
+        vals:[`₹${fmt(fv)}`,`₹${fmt(growth)}`,`${((growth/p)*100).toFixed(1)}%`],
+        chart:{type:'bar', labels:Array.from({length:t},(_,i)=>`Y${i+1}`),
+          data:Array.from({length:t},(_,i)=>+(p*Math.pow(1+(r/100),i+1)).toFixed(0)),
+          colors:['#00f5ff']
+        }
+      };
+    }
+  },
+  compound: {
+    inputs: [
+      {id:'principal', label:'💰 Principal Amount', unit:'₹', min:1000, max:10000000, step:1000, def:100000},
+      {id:'rate',      label:'📊 Annual Interest Rate', unit:'%', min:1, max:50, step:0.1, def:10},
+      {id:'time',      label:'📅 Time Period', unit:'yrs', min:1, max:40, step:1, def:5}
+    ],
+    calc(p,r,t){
+      const amount = p * Math.pow(1+(r/100),t);
+      const ci = amount-p;
+      return {
+        labels:['Compound Interest','Final Amount','Effective Rate'],
+        vals:[`₹${fmt(ci)}`,`₹${fmt(amount)}`,`${(((amount/p)-1)*100).toFixed(2)}%`],
+        chart:{type:'doughnut', labels:['Principal','Interest'], data:[p,ci], colors:['#b400ff','#00ff8c']}
+      };
+    }
+  },
+  simple: {
+    inputs: [
+      {id:'principal', label:'💵 Principal Amount', unit:'₹', min:1000, max:10000000, step:1000, def:100000},
+      {id:'rate',      label:'📊 Annual Interest Rate', unit:'%', min:1, max:50, step:0.1, def:8},
+      {id:'time',      label:'📅 Time Period', unit:'yrs', min:1, max:40, step:1, def:5}
+    ],
+    calc(p,r,t){
+      const si = (p*r*t)/100;
+      const final = p+si;
+      return {
+        labels:['Simple Interest','Final Amount','Effective Rate'],
+        vals:[`₹${fmt(si)}`,`₹${fmt(final)}`,`${((si/p)*100).toFixed(2)}%`],
+        chart:{type:'doughnut', labels:['Principal','Interest'], data:[p,si], colors:['#ff8c00','#00f5ff']}
+      };
+    }
+  }
+};
+
+function fmt(n){ return n.toLocaleString('en-IN',{maximumFractionDigits:2}); }
+
+function setFinType(type, btn){
+  finType = type;
+  document.querySelectorAll('.fin-type-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFinInputs();
+  document.getElementById('fin-results').style.display='none';
+  document.getElementById('chart-wrap').style.display='none';
+}
+
+function renderFinInputs(){
+  const cfg = finConfigs[finType];
+  document.getElementById('fin-inputs').innerHTML = cfg.inputs.map(inp=>`
+    <div class="slider-group">
+      <div class="slider-label-row">
+        <label class="slider-label" ${inp.tip?`data-tip="${inp.tip}"`:''}>${inp.label} (${inp.unit})</label>
+        <input class="fin-number-input" type="number" id="${inp.id}" value="${inp.def}"
+          min="${inp.min}" max="${inp.max}" step="${inp.step}" oninput="syncSlider('${inp.id}')">
+      </div>
+      <input type="range" class="fin-slider" id="${inp.id}-slider"
+        min="${inp.min}" max="${inp.max}" step="${inp.step}" value="${inp.def}"
+        oninput="syncNum('${inp.id}')" style="--pct:${((inp.def-inp.min)/(inp.max-inp.min))*100}%">
+    </div>
+  `).join('');
+}
+
+function syncSlider(id){
+  const num    = document.getElementById(id);
+  const slider = document.getElementById(id+'-slider');
+  slider.value = num.value;
+  const pct = ((num.value - slider.min)/(slider.max - slider.min))*100;
+  slider.style.setProperty('--pct', pct+'%');
+}
+
+function syncNum(id){
+  const slider = document.getElementById(id+'-slider');
+  const num    = document.getElementById(id);
+  num.value = slider.value;
+  const pct = ((slider.value - slider.min)/(slider.max - slider.min))*100;
+  slider.style.setProperty('--pct', pct+'%');
+}
+
+function calcFin(){
+  const cfg = finConfigs[finType];
+  const vals = cfg.inputs.map(inp=>parseFloat(document.getElementById(inp.id).value));
+  if(vals.some(v=>isNaN(v)||v<=0)){
+    showToast('⚠ Please enter valid values'); return;
+  }
+  const [p,r,t] = vals;
+  const res = cfg.calc(p,r,t);
+
+  // Show results
+  const resEl = document.getElementById('fin-results');
+  resEl.style.display='grid';
+  for(let i=0;i<3;i++){
+    document.getElementById(`fin-r${i+1}-label`).textContent = res.labels[i];
+    document.getElementById(`fin-r${i+1}-val`).textContent   = res.vals[i];
+  }
+  resEl.classList.add('flash');
+  setTimeout(()=>resEl.classList.remove('flash'),700);
+
+  // Chart
+  const chartWrap = document.getElementById('chart-wrap');
+  chartWrap.style.display='block';
+  if(finChart){ finChart.destroy(); finChart=null; }
+
+  const style = getComputedStyle(document.body);
+  const cyan   = style.getPropertyValue('--cyan').trim()||'#00f5ff';
+  const purple = style.getPropertyValue('--purple').trim()||'#b400ff';
+
+  const chartCtx = document.getElementById('fin-chart').getContext('2d');
+  finChart = new Chart(chartCtx, {
+    type: res.chart.type,
+    data: {
+      labels: res.chart.labels,
+      datasets:[{
+        data: res.chart.data,
+        backgroundColor: res.chart.type==='doughnut'
+          ? res.chart.colors.map(c=>c+'cc')
+          : `${cyan}aa`,
+        borderColor: res.chart.colors,
+        borderWidth: 2,
+        borderRadius: res.chart.type==='bar' ? 6 : 0
+      }]
+    },
+    options:{
+      responsive: true, maintainAspectRatio: false,
+      plugins:{
+        legend:{ labels:{ color: '#e8f0ff', font:{ family:"'Space Grotesk'", size:11 } } },
+        tooltip:{ callbacks:{ label: ctx => ' ₹' + fmt(ctx.raw) } }
+      },
+      scales: res.chart.type==='bar' ? {
+        x:{ ticks:{color:'#aaa'}, grid:{color:'rgba(255,255,255,0.05)'} },
+        y:{ ticks:{color:'#aaa', callback:v=>'₹'+fmt(v)}, grid:{color:'rgba(255,255,255,0.05)'} }
+      } : {},
+      cutout: res.chart.type==='doughnut' ? '65%' : undefined,
+    }
+  });
+}
+
+// Init
+renderFinInputs();
+
+/* ═══════════════════════════════════════════════════════
+   BMI CALCULATOR
+═══════════════════════════════════════════════════════ */
+let bmiUnit = 'metric';
+let lastBMI = null;
+
+function setUnit(unit, btn){
+  bmiUnit = unit;
+  document.querySelectorAll('.unit-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const wL = document.getElementById('weight-unit-label');
+  const hL = document.getElementById('height-unit-label');
+  const wI = document.getElementById('bmi-weight');
+  const hI = document.getElementById('bmi-height');
+  if(unit==='metric'){
+    wL.textContent='(kg)'; hL.textContent='(m)';
+    wI.placeholder='70'; hI.placeholder='1.75'; hI.step='0.01';
+  } else {
+    wL.textContent='(lb)'; hL.textContent='(ft)';
+    wI.placeholder='154'; hI.placeholder='5.75'; hI.step='0.01';
+  }
+  liveCalcBMI();
+}
+
+function liveCalcBMI(){
+  let w = parseFloat(document.getElementById('bmi-weight').value);
+  let h = parseFloat(document.getElementById('bmi-height').value);
+  if(isNaN(w)||isNaN(h)||w<=0||h<=0){ resetBMI(); return; }
+
+  if(bmiUnit==='imperial'){
+    w = w * 0.453592;
+    h = h * 0.3048;
+  }
+
+  const bmi = w/(h*h);
+  if(!isFinite(bmi)||bmi<5||bmi>70){ resetBMI(); return; }
+
+  lastBMI = bmi;
+  showBMI(bmi);
+}
+
+function resetBMI(){
+  document.getElementById('bmi-number').textContent='—';
+  document.getElementById('bmi-number').style.color='var(--muted)';
+  document.getElementById('bmi-cat').textContent='Enter your measurements';
+  document.getElementById('bmi-cat').style.color='var(--muted)';
+  document.getElementById('bmi-needle').style.left='50%';
+  document.getElementById('bmi-needle').dataset.val='';
+  document.getElementById('bmi-tips').innerHTML='';
+}
+
+function showBMI(bmi){
+  const numEl = document.getElementById('bmi-number');
+  const catEl = document.getElementById('bmi-cat');
+  const needle= document.getElementById('bmi-needle');
+
+  // Category
+  let cat, color, tips;
+  if(bmi<18.5){
+    cat='Underweight'; color='#60a5fa';
+    tips=['🥗 Increase caloric intake with nutritious foods','💪 Strength training to build muscle mass','🩺 Consult a nutritionist for a personalized plan','🥛 Add protein-rich foods to every meal'];
+  } else if(bmi<25){
+    cat='Healthy Weight'; color='#34d399';
+    tips=['✅ Maintain your current diet and activity','🏃 30 min of moderate exercise daily','💧 Stay hydrated — 8 glasses of water/day','😴 Ensure 7–9 hours of quality sleep'];
+  } else if(bmi<30){
+    cat='Overweight'; color='#fbbf24';
+    tips=['🥦 Increase vegetables and reduce processed foods','🚶 Aim for 10,000 steps per day','📉 Reduce refined sugar and carbs','🏋️ Mix cardio with strength training'];
+  } else {
+    cat='Obese'; color='#f87171';
+    tips=['🩺 Consult a doctor before starting a diet plan','🥗 Focus on whole foods and portion control','🚴 Begin with low-impact exercise','📊 Track your calories and activity daily'];
+  }
+
+  numEl.textContent = bmi.toFixed(1);
+  numEl.style.color = color;
+  catEl.textContent = cat;
+  catEl.style.color = color;
+
+  // Needle position: BMI 15 = 0%, BMI 40 = 100%
+  const pct = Math.min(Math.max((bmi-15)/25, 0), 1) * 100;
+  needle.style.left = pct+'%';
+  needle.dataset.val = bmi.toFixed(1);
+
+  // Tips
+  document.getElementById('bmi-tips').innerHTML = tips.map(t=>`
+    <div class="health-tip"><span class="tip-icon">${t[0]}</span>${t.slice(1)}</div>
+  `).join('');
+
+  document.getElementById('bmi-badge').classList.add('flash');
+  setTimeout(()=>document.getElementById('bmi-badge').classList.remove('flash'),700);
+}
+
+/* ═══════════════════════════════════════════════════════
+   COPY / SHARE / TOAST
+═══════════════════════════════════════════════════════ */
+function copyResult(tab){
+  let text = '';
+  if(tab==='sci'){
+    text = `Expression: ${document.getElementById('prev-expr').textContent}\nResult: ${exprEl.textContent}`;
+  } else if(tab==='fin'){
+    const r1 = document.getElementById('fin-r1-label').textContent + ': ' + document.getElementById('fin-r1-val').textContent;
+    const r2 = document.getElementById('fin-r2-label').textContent + ': ' + document.getElementById('fin-r2-val').textContent;
+    const r3 = document.getElementById('fin-r3-label').textContent + ': ' + document.getElementById('fin-r3-val').textContent;
+    text = `TTC Pro — Financial Calculation\n${r1}\n${r2}\n${r3}`;
+  } else if(tab==='bmi'){
+    const n = document.getElementById('bmi-number').textContent;
+    const c = document.getElementById('bmi-cat').textContent;
+    text = `TTC Pro — BMI Result\nBMI: ${n}\nCategory: ${c}`;
+  }
+  navigator.clipboard.writeText(text).then(()=>showToast('✓ Copied to clipboard')).catch(()=>showToast('⚠ Copy failed'));
+}
+
+function shareResult(tab){
+  const url = window.location.href;
+  if(navigator.share){
+    navigator.share({ title:'TTC Pro', text:'Check my calculation on TTC Pro!', url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(()=>showToast('🔗 Link copied!')).catch(()=>{});
+  }
+}
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+/* ═══════════════════════════════════════════════════════
+   THEME SWITCHER
+═══════════════════════════════════════════════════════ */
+function setTheme(theme, dot){
+  document.body.dataset.theme = theme;
+  document.querySelectorAll('.theme-dot').forEach(d=>d.classList.remove('active'));
+  dot.classList.add('active');
+  // Reinit chart colors if visible
+  if(finChart && document.getElementById('chart-wrap').style.display!=='none'){
+    // Just re-run calc visually
+    calcFin();
+  }
+}
+</script>
+</body>
+</html>
